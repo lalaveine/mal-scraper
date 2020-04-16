@@ -3,51 +3,30 @@ from bs4 import BeautifulSoup
 import re
 from datetime import datetime
 import sqlite3
-
-# class BaseModel(Model):
-#     class Meta:
-#         database = db
-
-
-# class Anime(BaseModel):
-#     anime_id = IntegerField(primary_key = True)
-#     name = CharField(unique=True)
-#     genre = DeferredForeignKey('AnimeGenre', null=True)
-#     number_of_episodes = IntegerField()
-
-
-# class Genre(BaseModel):
-#     genre_id = AutoField()
-#     genre = CharField(unique = True)
-
-
-# class AnimeGenre(BaseModel):
-#     anime_genre_id = AutoField()
-#     anime = ForeignKeyField(Anime)
-#     genre = ForeignKeyField(Genre)
-
-
-# def populate_database(genre_list):
-#     db.connect()
-#     db.create_tables([Anime, Genre, AnimeGenre])
-
-#     for genre in genre_list :
-#         Genre.create(genre=genre)
-  
-#     db.close()
-
+from database_manager import DataManager
 
 def genre_scraper():
     page = requests.get('https://myanimelist.net/anime.php')
-
     genres_list = []
     if page.status_code is 200 :
         soup = BeautifulSoup(page.content, 'html.parser')
         results = soup.select('div.anime-manga-search > div:nth-child(2) > div > div > a')
         for link in results :
-            genres_list.append(link.text.split(' ')[0])
+            genres_list.append(link.text.split(' (')[0].lower().strip())
 
     return genres_list
+
+def studios_scraper():
+    page = requests.get('https://myanimelist.net/anime/producer')
+    studios_list = []
+    if page.status_code is 200 :
+        soup = BeautifulSoup(page.content, 'html.parser')
+        results = soup.select('.genre-name-link')
+        for link in results :
+            studios_list.append(link.text.split(' (')[0].lower().strip())
+
+    return studios_list
+
 
 # def all_anime():
 #     start_date = datetime.now().date()
@@ -140,15 +119,15 @@ cowboy_bebop = {
     'type' : 'tv',
     'number_of_episodes' : 26,
     'status' : 'finished airing',
-    'season' : 'spring',
+    'season' : 'spring 1998',
     'year' : 1998,
-    'producers' : 'bandai visual',
+    'producers' : [ 'bandai visual' ],
     'licensors' : [ 'funimation', 'bandai visual' ],
-    'studios' : 'sunrise',
+    'studios' : [ 'sunrise' ],
     'source' : 'original',
     'genres' : [ 'action', 'adventure', 'comedy', 'drama', 'sci-fi', 'space' ],
     'duration' : 24,
-    'rating' : 'R-17+',
+    'age_rating' : 'R-17+',
     'score' : 8.79,
     'rank' : 28,
     'popularity_rate' : 39,
@@ -156,8 +135,8 @@ cowboy_bebop = {
     'favorites' : 51401
 } 
 
-def add_anime(cowboy_bebop):
-    pass
-
 genres_list = genre_scraper()
+studios_list = studios_scraper()
 # populate_database(genres_list)
+dm = DataManager(genres_list, studios_list)
+dm.add_anime(cowboy_bebop)
