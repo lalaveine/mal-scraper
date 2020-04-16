@@ -14,6 +14,16 @@ title_studios = Table('title_studios', Base.metadata,
     Column('studio_id', Integer, ForeignKey('studio_list.studio_id'))
 )
 
+title_licensors = Table('title_licensors', Base.metadata,
+    Column('anime_id', Integer, ForeignKey('anime_list.anime_id')),
+    Column('studio_id', Integer, ForeignKey('studio_list.studio_id'))
+)
+
+title_producers = Table('title_producers', Base.metadata,
+    Column('anime_id', Integer, ForeignKey('anime_list.anime_id')),
+    Column('studio_id', Integer, ForeignKey('studio_list.studio_id'))
+)
+
 class Anime(Base):
     __tablename__ = 'anime_list'
     anime_id = Column(Integer, primary_key = True)
@@ -24,8 +34,8 @@ class Anime(Base):
     status = Column(String(100))
     season = Column(String(20))
     year = Column(Integer)
-    producers = Column(String(20))
-    licensors = Column(String(20))
+    producers = relationship('Studio', lambda: title_producers, backref = 'titles_producers')
+    licensors = relationship('Studio', lambda: title_licensors, backref = 'titles_licensors')
     studios = relationship('Studio', lambda: title_studios, backref = 'titles_studios')
     source = Column(String(100))
     genres = relationship('Genre', lambda: title_genres, backref = 'titles_genres')
@@ -51,8 +61,6 @@ class Studio(Base):
 engine = create_engine('sqlite:///animelist.db')
 Base.metadata.create_all(engine)
 Session = sessionmaker(bind=engine)
-
-
 
 
 class DataManager():
@@ -96,6 +104,12 @@ class DataManager():
 
         for studio in anime['studios']:
             anime_obj.studios.append(self.get_studio(studio))
+
+        for licensor in anime['licensors']:
+            anime_obj.licensors.append(self.get_studio(licensor))
+
+        for producer in anime['producers']:
+            anime_obj.producers.append(self.get_studio(producer))
 
         session.add(anime_obj)
         session.commit()
